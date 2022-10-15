@@ -1,3 +1,16 @@
+//! Expose a serial port to the machines local network.
+//! 
+//! Only connects a single TCP client at a time.
+//!
+//! This is to allow simple interfacing to embedded devices. My specific
+//! use-case is to easily interface with an embedded device that runs a http
+//! protocol over its serial line. This pass through effectivly turns it into
+//! a web server. As for why I am overlaying HTTP over serial? Becuase I need
+//! a comprehensive API to the embedded system, it is very easy to implement
+//! and the embedded system I am using has the room to easily handle this.
+//! 
+//! Use Ctrl-C to exit.
+
 use std::net::{SocketAddrV4, Ipv4Addr, TcpListener};
 use std::io::{Read, Write};
 use std::time::Duration;
@@ -17,16 +30,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // Setup serial port.
-    let path = String::from("/dev/tty.usbmodemTEST1");
-    let baud_rate = 115200;
     let mut serial = serialport::new(path, baud_rate)
         .timeout(Duration::from_millis(10))
         .open()?;
 
     // Setup networking.
-    let port: u16 = 8080;
-    let addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), port);
+    let addr = SocketAddrV4::new(Ipv4Addr::new(127, 0, 0, 1), tcp_port);
     let listener = TcpListener::bind(addr)?;
+    println!("Pass-through listening on 127.0.0.1:{tcp_port}");
 
     // Run the pass through.
     for stream in listener.incoming() {
